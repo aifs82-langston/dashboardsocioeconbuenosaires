@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,133 +5,156 @@ import seaborn as sns
 import re
 import os
 from fpdf import FPDF
-import io
 
-# 1. CONFIGURACIÓN DE LA PÁGINA
+# 1. CONFIGURACIÓN PROFESIONAL
 st.set_page_config(page_title="Dashboard Buenos Aires", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
+@st.cache_data
+def cargar_datos():
+    """Intenta cargar 'datosbuenosaires.xlsx' o el primer Excel disponible."""
+    try:
+        if os.path.exists('datosbuenosaires.xlsx'):
+            return pd.read_excel('datosbuenosaires.xlsx')
+        else:
+            excel_files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
+            if excel_files:
+                return pd.read_excel(excel_files[0])
+    except Exception as e:
+        st.error(f"Error al leer el archivo: {e}")
+    return None
+
 def clean_labels(text):
+    """Limpia prefijos tipo 'a) ', 'b) ' y espacios residuales."""
     if pd.isna(text): return text
-    # Elimina prefijos tipo "a) ", "b) " al inicio
     return re.sub(r'^[a-z]\)\s*', '', str(text)).strip()
 
-def create_pdf(df_resumen, total, pct_ind):
+def generar_pdf_data(df_sexo, total, pct_ind):
+    """Crea un resumen en PDF para descarga."""
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Encuesta Buenos Aires", ln=True, align='C')
-
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Municipalidad de Buenos Aires", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.ln(10)
-    pdf.cell(200, 10, txt=f"Total de Encuestados: {total}", ln=True)
+    pdf.cell(200, 10, txt=f"Total de la Muestra: {total}", ln=True)
     pdf.cell(200, 10, txt=f"Identificacion Indigena: {pct_ind:.1f}%", ln=True)
-
     pdf.ln(10)
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(200, 10, txt="Distribucion por Sexo:", ln=True)
+    pdf.cell(200, 10, txt="Resumen por Sexo:", ln=True)
     pdf.set_font("Arial", size=12)
-    for label, value in df_resumen.items():
+    for label, value in df_sexo.items():
         pdf.cell(200, 10, txt=f"- {label}: {value}", ln=True)
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
-# --- CARGA DE DATOS DESDE REPOSITORIO ---
-@st.cache_data
-def cargar_datos():
-    # Intenta cargar el archivo directo o busca candidatos en el repositorio
-    file_path = 'datosbuenosaires.xlsx'
-    try:
-        return pd.read_excel(file_path)
-    except:
-        candidates = [f for f in os.listdir() if 'Buenos Aires' in f and f.endswith('.xlsx')]
-        if candidates:
-            return pd.read_excel(candidates[0])
-    return None
-
-# --- PROCESAMIENTO ---
+# --- LÓGICA PRINCIPAL ---
 df = cargar_datos()
 
 if df is not None:
-    # Renombramiento basado en las columnas socioeconómicas
+    # 2. RENOMBRAMIENTO Y LIMPIEZA
     column_mapping = {
-        df.columns[3]: 'Sexo', df.columns[4]: 'Edad',
-        df.columns[5]: 'Nivel_Estudios', df.columns[6]: 'Ocupacion',
-        df.columns[7]: 'Ingreso_Mensual', df.columns[9]: 'Identificacion_Indigena'
+        df.columns[3]: 'Sexo', 
+        df.columns[4]: 'Edad',
+        df.columns[5]: 'Nivel_Estudios', 
+        df.columns[6]: 'Ocupacion',
+        df.columns[7]: 'Ingreso_Mensual', 
+        df.columns[9]: 'Identificacion_Indigena'
     }
     df_eda = df.rename(columns=column_mapping).copy()
 
-    for col in df_eda.columns[3:10]:
-        if col in df_eda.columns:
-            df_eda[col] = df_eda[col].apply(clean_labels)
+    # Aplicar limpieza a todas las columnas socioeconómicas
+    for col in ['Sexo', 'Edad', 'Nivel_Estudios', 'Ocupacion', 'Ingreso_Mensual', 'Identificacion_Indigena']:
+        df_eda[col] = df_eda[col].apply(clean_labels)
 
-    # --- ENCABEZADO Y MÉTRICAS ---
-    st.title("📊 Dashboard Piloto: Perfil Socioeconómico")
-    st.markdown("### Municipalidad de Buenos Aires, Puntarenas")
+    # --- TÍTULOS Y MÉTRICAS ---
+    st.title("📊 Perfil Socioeconómico: Buenos Aires")
+    st.markdown("### Piloto de Diagnóstico Municipal")
 
     total_n = len(df_eda)
-    pct_ind = (df_eda['Identificacion_Indigena'] == 'Sí').mean() * 100
+    pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
 
-    col_m1, col_m2, col_m3 = st.columns(3)
+    col_m1, col_m2, col_m3 = st.columns([1, 1, 1])
     with col_m1:
-        st.metric("Total Encuestados", total_n)
+        st.metric("Total Muestra", total_n)
     with col_m2:
         st.metric("% Identificación Indígena", f"{pct_ind:.1f}%")
     with col_m3:
-        # Generación y descarga de PDF
-        pdf_data = create_pdf(df_eda['Sexo'].value_counts(), total_n, pct_ind)
-        st.download_button(label="📥 Descargar Reporte PDF", data=pdf_data,
-                           file_name="reporte_buenos_aires.pdf", mime="application/pdf")
+        # Botón para descargar reporte PDF
+        pdf_bytes = generar_pdf_data(df_eda['Sexo'].value_counts(), total_n, pct_ind)
+        st.download_button(
+            label="📥 Descargar Reporte PDF",
+            data=pdf_bytes,
+            file_name="reporte_buenos_aires.pdf",
+            mime="application/pdf"
+        )
 
     st.divider()
 
     # --- DASHBOARD VISUAL (3x2) ---
     sns.set(style="whitegrid")
-
-    # Fila 1: Demografía
+    
+    # FILA 1
     c1, c2 = st.columns(2)
     with c1:
         st.subheader("A. Distribución por Género")
         fig1, ax1 = plt.subplots()
         sns.countplot(x='Sexo', data=df_eda, palette='pastel', hue='Sexo', legend=False, ax=ax1)
+        ax1.set_xlabel("")
         st.pyplot(fig1)
+
     with c2:
         st.subheader("B. Rangos de Edad")
         fig2, ax2 = plt.subplots()
-        edad_order = sorted(df_eda['Edad'].unique(), key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0)
+        # Orden lógico de edad (extrayendo el primer número del rango)
+        edad_order = sorted(df_eda['Edad'].unique(), 
+                            key=lambda x: int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0)
         sns.countplot(x='Edad', data=df_eda, palette='viridis', order=edad_order, hue='Edad', legend=False, ax=ax2)
-        plt.xticks(rotation=45, ha='right') # Limpieza de ejes solicitada
+        plt.xticks(rotation=45, ha='right')
+        ax2.set_xlabel("")
         st.pyplot(fig2)
 
-    # Fila 2: Educación y Ocupación
+    # FILA 2
     c3, c4 = st.columns(2)
     with c3:
-        st.subheader("C. Nivel Académico")
+        st.subheader("C. Nivel Académico Alcanzado")
         fig3, ax3 = plt.subplots()
         est_order = df_eda['Nivel_Estudios'].value_counts().index
         sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', order=est_order, hue='Nivel_Estudios', legend=False, ax=ax3)
+        ax3.set_ylabel("")
         st.pyplot(fig3)
+
     with c4:
         st.subheader("D. Ocupación Principal (Top 10)")
         fig4, ax4 = plt.subplots()
         ocup_order = df_eda['Ocupacion'].value_counts().head(10).index
-        sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_order)], palette='rocket', order=ocup_order, hue='Ocupacion', legend=False, ax=ax4)
+        sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_order)], 
+                      palette='rocket', order=ocup_order, hue='Ocupacion', legend=False, ax=ax4)
+        ax4.set_ylabel("")
         st.pyplot(fig4)
 
-    # Fila 3: Economía e Identidad
+    # FILA 3
     c5, c6 = st.columns(2)
     with c5:
         st.subheader("E. Nivel de Ingresos Mensuales")
         fig5, ax5 = plt.subplots()
-        ingreso_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
-        actual_labels = [l for l in df_eda['Ingreso_Mensual'].unique() if l in ingreso_map]
-        ing_order = sorted(actual_labels, key=lambda x: ingreso_map[x])
+        # Mapeo para orden económico
+        ing_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 
+                   'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
+        # Filtrado de etiquetas presentes
+        label_list = [l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map]
+        ing_order = sorted(label_list, key=lambda x: ing_map[x])
         sns.countplot(y='Ingreso_Mensual', data=df_eda, palette='crest', order=ing_order, hue='Ingreso_Mensual', legend=False, ax=ax5)
+        ax5.set_ylabel("")
         st.pyplot(fig5)
+
     with c6:
         st.subheader("F. Identificación Indígena")
         fig6, ax6 = plt.subplots()
         sns.countplot(x='Identificacion_Indigena', data=df_eda, palette='Set2', hue='Identificacion_Indigena', legend=False, ax=ax6)
+        ax6.set_xlabel("")
         st.pyplot(fig6)
 
+    st.info("💡 Consejo: Utiliza el botón superior para descargar el resumen ejecutivo en formato PDF.")
+
 else:
-    st.error("Archivo no encontrado. Verifique que 'datosbuenosaires.xlsx' esté en el repositorio.")
+    st.error("No se encontró el archivo de datos. Por favor, asegúrate de que el archivo Excel esté en el repositorio de GitHub.")
