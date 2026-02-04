@@ -100,6 +100,7 @@ if df is not None:
 
     # Métricas Dashboard
     st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica.")
+    st.title("Dashboard Piloto.")
     st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
     
     total_n = len(df_eda)
