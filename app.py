@@ -93,7 +93,7 @@ if df is not None:
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
     # Métricas Dashboard
-    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
+    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica.")
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
     conteo_sexo = df_eda['Sexo'].value_counts()
