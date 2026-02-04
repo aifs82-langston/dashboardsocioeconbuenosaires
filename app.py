@@ -178,7 +178,7 @@ if df is not None:
                 fig5, ax5 = plt.subplots()
                 ing_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
                 ing_order = sorted([l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map], key=lambda x: ing_map[x])
-                sns.countplot( y,data=df_eda, order=ing_order, ax=ax5)
+                sns.countplot( y='Ingreso_Mensual',data=df_eda, order=ing_order, ax=ax5)
                 ax5.set_xlabel("Frecuencia (n)")
                 st.pyplot(fig5)
                 figuras.append(fig5); titulos.append(t5)
