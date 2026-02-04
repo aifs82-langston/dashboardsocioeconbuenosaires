@@ -94,6 +94,7 @@ if df is not None:
 
     # Métricas Dashboard
     st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica.")
+    st.markdown("### Dashboard Piloto")
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
     conteo_sexo = df_eda['Sexo'].value_counts()
