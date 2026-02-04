@@ -9,7 +9,7 @@ from fpdf import FPDF
 from tempfile import NamedTemporaryFile
 
 # 1. CONFIGURACIÓN PROFESIONAL
-st.set_page_config(page_title="Dashboard Socioeconómico - Buenos Aires", layout="wide")
+st.set_page_config(page_title="Dashboard Socioeconómico - Municipalidad de Buenos Aires, Costa Rica", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 @st.cache_data
@@ -93,7 +93,7 @@ if df is not None:
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
     # Métricas Dashboard
-    st.title("📊 Perfil Socioeconómico: Buenos Aires, Costa Rica")
+    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
     conteo_sexo = df_eda['Sexo'].value_counts()
