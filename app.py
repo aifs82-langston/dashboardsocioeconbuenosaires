@@ -94,8 +94,8 @@ if df is not None:
 
     # Sidebar con logo
     if os.path.exists("sidebar_desarrollo_territorial.png"):
-        st.title.image("sidebar_desarrollo_territorial.png", use_container_width=True)
-    st.title.header("⚙️ Panel de Control")
+        st.sidebar.image("sidebar_desarrollo_territorial.png", use_container_width=True)
+    st.sidebar.header("⚙️ Panel de Control")
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
     # Métricas Dashboard
