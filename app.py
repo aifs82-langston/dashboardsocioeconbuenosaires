@@ -14,7 +14,6 @@ st.set_page_config(page_title="Dashboard Socioeconómico - Buenos Aires, Costa R
 # --- FUNCIONES DE APOYO ---
 @st.cache_data
 def cargar_datos():
-    """Carga el Excel desde el repositorio."""
     try:
         if os.path.exists('datosbuenosaires.xlsx'):
             return pd.read_excel('datosbuenosaires.xlsx')
@@ -30,24 +29,19 @@ def clean_labels(text):
     return re.sub(r'^[a-z]\)\s*', '', str(text)).strip()
 
 def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_graficos):
-    """Genera un PDF profesional con diseño limpio y títulos únicos."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     
-    # Encabezado Institucional
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconómicos", ln=True, align='C')
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos", ln=True, align='C')
     pdf.set_font("Arial", 'I', 10)
     pdf.cell(200, 10, txt="Municipalidad de Buenos Aires, Costa Rica - Piloto 2026", ln=True, align='C')
     
-    # Métricas principales
     pdf.set_font("Arial", 'B', 12)
     pdf.ln(10)
-    pdf.cell(200, 10, txt="Resumen de Indicadores Clave:", ln=True)
-    pdf.set_font("Arial", size=11)
-    pdf.cell(200, 8, txt=f"Total de la Muestra: {total} encuestados", ln=True)
-    pdf.cell(200, 8, txt=f"Identificación Indígena: {pct_ind:.1f}%", ln=True)
+    pdf.cell(200, 10, txt=f"Total de la Muestra: {total} encuestados", ln=True)
+    pdf.cell(200, 10, txt=f"Identificacion Indigena: {pct_ind:.1f}%", ln=True)
     
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 12)
@@ -64,37 +58,20 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
         pdf.ln(8)
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, txt=f"{titulos_graficos[i]}", ln=True) 
-        
-        # Limpieza absoluta de títulos internos para el PDF
         ax = fig.gca()
         ax.set_title("") 
-        
         with NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
             fig.savefig(tmpfile.name, format='png', bbox_inches='tight', dpi=150)
             pdf.image(tmpfile.name, x=20, w=160)
         os.unlink(tmpfile.name)
-        
-        if (i + 1) % 2 == 0 and (i + 1) < len(lista_graficos):
+        if (i + 1) % 2 == 0:
             pdf.add_page()
-
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # --- LÓGICA DE DATOS ---
 df = cargar_datos()
 
-# SIDEBAR PERSISTENTE
-with st.sidebar:
-    if os.path.exists("sidebar_desarrollo_territorial.png"):
-        st.image("sidebar_desarrollo_territorial.png", use_container_width=True)
-    st.header("⚙️ Panel de Control")
-    st.write("Bienvenido. Use el botón para procesar la información municipal.")
-    btn_analisis = st.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
-    
-    if btn_analisis:
-        st.info("🔄 Inicio de análisis...")
-
 if df is not None:
-    # Procesamiento de variables
     column_mapping = {
         df.columns[3]: 'Sexo', df.columns[4]: 'Edad',
         df.columns[5]: 'Nivel_Estudios', df.columns[6]: 'Ocupacion',
@@ -104,10 +81,22 @@ if df is not None:
     for col in ['Sexo', 'Edad', 'Nivel_Estudios', 'Ocupacion', 'Ingreso_Mensual', 'Identificacion_Indigena']:
         df_eda[col] = df_eda[col].apply(clean_labels)
 
-    # Títulos Principales
+    # --- DISEÑO CENTRAL (MOVIDO DEL SIDEBAR PARA MÓVILES) ---
+    # Colocamos el logo y el botón en el centro para evitar el menú oculto
+    col_logo, col_btn = st.columns([1, 1])
+    
+    with col_logo:
+        if os.path.exists("sidebar_desarrollo_territorial.png"):
+            st.image("sidebar_desarrollo_territorial.png", use_container_width=True)
+    
+    with col_btn:
+        st.write("### Panel de Control")
+        btn_analisis = st.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
+
+    # Métricas Dashboard
     st.title("📊 Perfil Socioeconómico: Buenos Aires, Costa Rica.")
     st.subheader("Dashboard Piloto.")
-    st.markdown("**Alfredo Ibrahim Flores Sarria ©2026**")
+    st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
     
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
@@ -124,7 +113,8 @@ if df is not None:
     st.divider()
 
     if btn_analisis:
-        with st.spinner('Procesando visualizaciones...'):
+        st.toast("Inicio de análisis...")
+        with st.spinner('Procesando reporte completo...'):
             sns.set(style="whitegrid")
             figuras, titulos = [], []
             
@@ -150,13 +140,13 @@ if df is not None:
                 st.pyplot(fig2)
                 figuras.append(fig2); titulos.append(t2)
 
-            # FILA 2
+            # FILA 2 (Educación y Ocupación)
             c3, c4 = st.columns(2)
             with c3:
                 t3 = "Nivel Académico Alcanzado"
                 st.subheader(t3)
                 fig3, ax3 = plt.subplots()
-                sns.countplot(y='Nivel_Est_order' if 'Nivel_Est_order' in locals() else 'Nivel_Estudios', data=df_eda, palette='magma', ax=ax3)
+                sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', ax=ax3)
                 ax3.set_title(""); ax3.set_xlabel(None); ax3.set_ylabel(None)
                 st.pyplot(fig3)
                 figuras.append(fig3); titulos.append(t3)
@@ -171,7 +161,7 @@ if df is not None:
                 st.pyplot(fig4)
                 figuras.append(fig4); titulos.append(t4)
 
-            # FILA 3
+            # FILA 3 (Ingresos e Identidad)
             c5, c6 = st.columns(2)
             with c5:
                 t5 = "Nivel de Ingresos Mensuales"
@@ -193,19 +183,17 @@ if df is not None:
                 st.pyplot(fig6)
                 figuras.append(fig6); titulos.append(t6)
 
-            st.sidebar.success("✅ Análisis terminado")
-            st.sidebar.write("---")
-            st.sidebar.subheader("Ver resultados")
+            st.success("✅ Análisis terminado")
             
             pdf_bytes = generar_pdf_completo(conteo_sexo, total_n, pct_ind, figuras, titulos)
-            st.sidebar.download_button(
-                label="📥 Descargar Reporte PDF",
+            st.download_button(
+                label="📥 Descargar Reporte PDF Completo",
                 data=pdf_bytes,
                 file_name="reporte_buenos_aires_final.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
     else:
-        st.info("💡 Por favor, haga clic en el botón de la barra lateral para generar el análisis visual detallado.")
+        st.info("💡 Por favor, haga clic arriba en el botón ▶️ para generar el análisis visual y el reporte.")
 else:
-    st.error("No se encontró el archivo de datos.")
+    st.error("Archivo no encontrado.")
