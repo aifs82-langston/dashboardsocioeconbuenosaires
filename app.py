@@ -7,7 +7,7 @@ import os
 from fpdf import FPDF
 
 # 1. CONFIGURACIÓN PROFESIONAL
-st.set_page_config(page_title="Dashboard Buenos Aires", layout="wide")
+st.set_page_config(page_title="Dashboard de datos socioeconómicos de la Municipalidad de Buenos Aires, Costa Rica", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 @st.cache_data
@@ -34,7 +34,7 @@ def generar_pdf_data(df_sexo, total, pct_ind):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Municipalidad de Buenos Aires", ln=True, align='C')
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconómicos de la Municipalidad de Buenos Aires, Costa Rica", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.ln(10)
     pdf.cell(200, 10, txt=f"Total de la Muestra: {total}", ln=True)
@@ -70,10 +70,10 @@ if df is not None:
     st.sidebar.write("Bienvenido, use el botón de abajo para procesar la información municipal.")
     
     # BOTÓN DE ACTIVACIÓN
-    btn_analisis = st.sidebar.button("🚀 Ejecutar Análisis Descriptivo", use_container_width=True)
+    btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
     # --- TÍTULOS Y MÉTRICAS (Siempre visibles) ---
-    st.title("📊 Perfil Socioeconómico: Buenos Aires")
+    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
     st.markdown("### Piloto de Diagnóstico Municipal")
 
     total_n = len(df_eda)
@@ -104,14 +104,14 @@ if df is not None:
             # FILA 1
             c1, c2 = st.columns(2)
             with c1:
-                st.subheader("A. Distribución por Género")
+                st.subheader("Distribución por Género")
                 fig1, ax1 = plt.subplots()
                 sns.countplot(x='Sexo', data=df_eda, palette='pastel', hue='Sexo', legend=False, ax=ax1)
                 ax1.set_xlabel("")
                 st.pyplot(fig1)
 
             with c2:
-                st.subheader("B. Rangos de Edad")
+                st.subheader("Rangos de Edad")
                 fig2, ax2 = plt.subplots()
                 edad_order = sorted(df_eda['Edad'].unique(), 
                                     key=lambda x: int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0)
@@ -123,7 +123,7 @@ if df is not None:
             # FILA 2
             c3, c4 = st.columns(2)
             with c3:
-                st.subheader("C. Nivel Académico Alcanzado")
+                st.subheader("Nivel Académico Alcanzado")
                 fig3, ax3 = plt.subplots()
                 est_order = df_eda['Nivel_Estudios'].value_counts().index
                 sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', order=est_order, hue='Nivel_Estudios', legend=False, ax=ax3)
@@ -131,7 +131,7 @@ if df is not None:
                 st.pyplot(fig3)
 
             with c4:
-                st.subheader("D. Ocupación Principal (Top 10)")
+                st.subheader("Ocupación Principal (Top 10)")
                 fig4, ax4 = plt.subplots()
                 ocup_order = df_eda['Ocupacion'].value_counts().head(10).index
                 sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_order)], 
@@ -142,7 +142,7 @@ if df is not None:
             # FILA 3
             c5, c6 = st.columns(2)
             with c5:
-                st.subheader("E. Nivel de Ingresos Mensuales")
+                st.subheader("Nivel de Ingresos Mensuales")
                 fig5, ax5 = plt.subplots()
                 ing_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 
                            'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
@@ -153,7 +153,7 @@ if df is not None:
                 st.pyplot(fig5)
 
             with c6:
-                st.subheader("F. Identificación Indígena")
+                st.subheader("Identificación Indígena")
                 fig6, ax6 = plt.subplots()
                 sns.countplot(x='Identificacion_Indigena', data=df_eda, palette='Set2', hue='Identificacion_Indigena', legend=False, ax=ax6)
                 ax6.set_xlabel("")
