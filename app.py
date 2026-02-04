@@ -109,7 +109,7 @@ if df is not None:
         edad_order = sorted(df_eda['Edad'].unique(), 
                             key=lambda x: int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0)
         sns.countplot(x='Edad', data=df_eda, palette='viridis', order=edad_order, hue='Edad', legend=False, ax=ax2)
-        plt.xticks(rotation=45, ha='right')
+        plt.xticks(rotation=90, ha='right')
         ax2.set_xlabel("")
         st.pyplot(fig2)
 
