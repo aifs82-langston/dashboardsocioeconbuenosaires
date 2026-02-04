@@ -72,7 +72,7 @@ if df is not None:
     # BOTÓN DE ACTIVACIÓN
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
-    # --- TÍTULOS Y MÉTRICAS (Siempre visibles) ---
+    # --- TÍTULOS Y MÉTRICAS ---
     st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
     st.markdown("### Piloto de Diagnóstico Municipal")
 
@@ -96,7 +96,7 @@ if df is not None:
 
     st.divider()
 
-    # --- EJECUCIÓN CONDICIONAL DEL ANÁLISIS ---
+    # --- EJECUCIÓN DEL ANÁLISIS ---
     if btn_analisis:
         with st.spinner('Procesando datos y generando visualizaciones...'):
             sns.set(style="whitegrid")
@@ -108,6 +108,7 @@ if df is not None:
                 fig1, ax1 = plt.subplots()
                 sns.countplot(x='Sexo', data=df_eda, palette='pastel', hue='Sexo', legend=False, ax=ax1)
                 ax1.set_xlabel("")
+                ax1.set_ylabel("Frecuencia (n)")
                 st.pyplot(fig1)
 
             with c2:
@@ -118,6 +119,7 @@ if df is not None:
                 sns.countplot(x='Edad', data=df_eda, palette='viridis', order=edad_order, hue='Edad', legend=False, ax=ax2)
                 plt.xticks(rotation=45, ha='right')
                 ax2.set_xlabel("")
+                ax2.set_ylabel("Frecuencia (n)")
                 st.pyplot(fig2)
 
             # FILA 2
@@ -127,6 +129,7 @@ if df is not None:
                 fig3, ax3 = plt.subplots()
                 est_order = df_eda['Nivel_Estudios'].value_counts().index
                 sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', order=est_order, hue='Nivel_Estudios', legend=False, ax=ax3)
+                ax3.set_xlabel("Frecuencia (n)")
                 ax3.set_ylabel("")
                 st.pyplot(fig3)
 
@@ -136,6 +139,7 @@ if df is not None:
                 ocup_order = df_eda['Ocupacion'].value_counts().head(10).index
                 sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_order)], 
                               palette='rocket', order=ocup_order, hue='Ocupacion', legend=False, ax=ax4)
+                ax4.set_xlabel("Frecuencia (n)")
                 ax4.set_ylabel("")
                 st.pyplot(fig4)
 
@@ -149,19 +153,23 @@ if df is not None:
                 label_list = [l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map]
                 ing_order = sorted(label_list, key=lambda x: ing_map[x])
                 sns.countplot(y='Ingreso_Mensual', data=df_eda, palette='crest', order=ing_order, hue='Ingreso_Mensual', legend=False, ax=ax5)
+                ax5.set_xlabel("Frecuencia (n)")
                 ax5.set_ylabel("")
                 st.pyplot(fig5)
 
             with c6:
-                st.subheader("Identificación Indígena")
+                st.subheader("Identificación Indígena (Proporción)")
                 fig6, ax6 = plt.subplots()
-                sns.countplot(x='Identificacion_Indigena', data=df_eda, palette='Set2', hue='Identificacion_Indigena', legend=False, ax=ax6)
+                # Cambio a Frecuencia Relativa usando histplot con stat="proportion"
+                sns.histplot(x='Identificacion_Indigena', data=df_eda, 
+                             hue='Identificacion_Indigena', palette='Set2', 
+                             stat="proportion", shrink=.8, legend=False, ax=ax6)
                 ax6.set_xlabel("")
+                ax6.set_ylabel("Frecuencia Relativa (%)")
                 st.pyplot(fig6)
 
             st.success("✅ Análisis descriptivo finalizado con éxito.")
     else:
-        # Mensaje cuando el botón aún no ha sido presionado
         st.info("💡 Por favor, haga clic en el botón de la barra lateral para generar el análisis visual detallado.")
 
 else:
