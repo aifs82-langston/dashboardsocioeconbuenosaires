@@ -7,7 +7,7 @@ import os
 from fpdf import FPDF
 
 # 1. CONFIGURACIÓN PROFESIONAL
-st.set_page_config(page_title="Dashboard de datos socioeconómicos de la Municipalidad de Buenos Aires, Costa Rica", layout="wide")
+st.set_page_config(page_title="Dashboard de datos socioeconómicos - Municipalidad de Buenos Aires", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 @st.cache_data
@@ -34,7 +34,7 @@ def generar_pdf_data(df_sexo, total, pct_ind):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconómicos de la Municipalidad de Buenos Aires, Costa Rica", ln=True, align='C')
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos - Buenos Aires", ln=True, align='C')
     pdf.set_font("Arial", size=12)
     pdf.ln(10)
     pdf.cell(200, 10, txt=f"Total de la Muestra: {total}", ln=True)
@@ -47,11 +47,10 @@ def generar_pdf_data(df_sexo, total, pct_ind):
         pdf.cell(200, 10, txt=f"- {label}: {value}", ln=True)
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
-# --- LÓGICA DE CARGA ---
+# --- LÓGICA DE CARGA Y LIMPIEZA ---
 df = cargar_datos()
 
 if df is not None:
-    # 2. RENOMBRAMIENTO Y LIMPIEZA
     column_mapping = {
         df.columns[3]: 'Sexo', 
         df.columns[4]: 'Edad',
@@ -67,25 +66,29 @@ if df is not None:
 
     # --- BARRA LATERAL (SIDEBAR) ---
     st.sidebar.header("⚙️ Panel de Control")
-    st.sidebar.write("Bienvenido, use el botón de abajo para procesar la información municipal.")
-    
-    # BOTÓN DE ACTIVACIÓN
+    st.sidebar.write("Use el botón para procesar la información municipal.")
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
     # --- TÍTULOS Y MÉTRICAS ---
-    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
+    st.title("📊 Perfil Socioeconómico: Buenos Aires, Costa Rica")
     st.markdown("### Piloto de Diagnóstico Municipal")
 
+    # Cálculos para métricas
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
+    
+    # Desagregación por género para la métrica
+    conteo_sexo = df_eda['Sexo'].value_counts()
+    detalle_sexo = " | ".join([f"{k}: {v}" for k, v in conteo_sexo.items()])
 
-    col_m1, col_m2, col_m3 = st.columns([1, 1, 1])
+    col_m1, col_m2, col_m3 = st.columns([1.2, 1, 1])
     with col_m1:
         st.metric("Total Muestra", total_n)
+        st.caption(f"**Desglose:** {detalle_sexo}") # Desagregación solicitada
     with col_m2:
         st.metric("% Identificación Indígena", f"{pct_ind:.1f}%")
     with col_m3:
-        pdf_bytes = generar_pdf_data(df_eda['Sexo'].value_counts(), total_n, pct_ind)
+        pdf_bytes = generar_pdf_data(conteo_sexo, total_n, pct_ind)
         st.download_button(
             label="📥 Descargar Reporte PDF",
             data=pdf_bytes,
@@ -98,7 +101,7 @@ if df is not None:
 
     # --- EJECUCIÓN DEL ANÁLISIS ---
     if btn_analisis:
-        with st.spinner('Procesando datos y generando visualizaciones...'):
+        with st.spinner('Generando visualizaciones...'):
             sns.set(style="whitegrid")
             
             # FILA 1
@@ -160,17 +163,17 @@ if df is not None:
             with c6:
                 st.subheader("Identificación Indígena (Proporción)")
                 fig6, ax6 = plt.subplots()
-                # Cambio a Frecuencia Relativa usando histplot con stat="proportion"
+                # Uso de Proporción (Frecuencia Relativa)
                 sns.histplot(x='Identificacion_Indigena', data=df_eda, 
                              hue='Identificacion_Indigena', palette='Set2', 
                              stat="proportion", shrink=.8, legend=False, ax=ax6)
                 ax6.set_xlabel("")
-                ax6.set_ylabel("Frecuencia Relativa (%)")
+                ax6.set_ylabel("Frecuencia Relativa") # Proporción solicitada
                 st.pyplot(fig6)
 
-            st.success("✅ Análisis descriptivo finalizado con éxito.")
+            st.success("✅ Análisis descriptivo finalizado.")
     else:
-        st.info("💡 Por favor, haga clic en el botón de la barra lateral para generar el análisis visual detallado.")
+        st.info("💡 Haga clic en el botón 'Ejecutar Análisis' para generar las visualizaciones.")
 
 else:
     st.error("No se encontró el archivo de datos en el repositorio de GitHub.")
