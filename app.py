@@ -65,6 +65,7 @@ if df is not None:
         df_eda[col] = df_eda[col].apply(clean_labels)
 
     # --- BARRA LATERAL (SIDEBAR) ---
+    st.sidebar.image("sidebar_desarrollo_territorial.png", use_container_width=True)
     st.sidebar.header("⚙️ Panel de Control")
     st.sidebar.write("Use el botón para procesar la información municipal.")
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
