@@ -9,7 +9,7 @@ from fpdf import FPDF
 from tempfile import NamedTemporaryFile
 
 # 1. CONFIGURACIÓN PROFESIONAL
-st.set_page_config(page_title="Dashboard Socioeconómico - Municipalidad de Buenos Aires, Costa Rica", layout="wide")
+st.set_page_config(page_title="Dashboard Socioeconómico - Buenos Aires, Costa Rica", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 @st.cache_data
@@ -30,14 +30,14 @@ def clean_labels(text):
     return re.sub(r'^[a-z]\)\s*', '', str(text)).strip()
 
 def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_graficos):
-    """Genera un PDF profesional con títulos únicos y ejes limpios."""
+    """Genera un PDF profesional con diseño limpio y títulos únicos."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     
-    # Encabezado
+    # Encabezado Institucional
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos", ln=True, align='C')
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconómicos", ln=True, align='C')
     pdf.set_font("Arial", 'I', 10)
     pdf.cell(200, 10, txt="Municipalidad de Buenos Aires, Costa Rica - Piloto 2026", ln=True, align='C')
     
@@ -47,7 +47,7 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
     pdf.cell(200, 10, txt="Resumen de Indicadores Clave:", ln=True)
     pdf.set_font("Arial", size=11)
     pdf.cell(200, 8, txt=f"Total de la Muestra: {total} encuestados", ln=True)
-    pdf.cell(200, 8, txt=f"Identificacion Indigena: {pct_ind:.1f}%", ln=True)
+    pdf.cell(200, 8, txt=f"Identificación Indígena: {pct_ind:.1f}%", ln=True)
     
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 12)
@@ -65,7 +65,7 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, txt=f"{titulos_graficos[i]}", ln=True) 
         
-        # ELIMINACIÓN DE TÍTULO INTERNO PARA EL PDF (Solo la imagen)
+        # Limpieza absoluta de títulos internos para el PDF
         ax = fig.gca()
         ax.set_title("") 
         
@@ -82,15 +82,19 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
 # --- LÓGICA DE DATOS ---
 df = cargar_datos()
 
-# SIDEBAR (Se define fuera para que sea persistente)
+# SIDEBAR PERSISTENTE
 with st.sidebar:
     if os.path.exists("sidebar_desarrollo_territorial.png"):
         st.image("sidebar_desarrollo_territorial.png", use_container_width=True)
     st.header("⚙️ Panel de Control")
     st.write("Bienvenido. Use el botón para procesar la información municipal.")
     btn_analisis = st.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
+    
+    if btn_analisis:
+        st.info("🔄 Inicio de análisis...")
 
 if df is not None:
+    # Procesamiento de variables
     column_mapping = {
         df.columns[3]: 'Sexo', df.columns[4]: 'Edad',
         df.columns[5]: 'Nivel_Estudios', df.columns[6]: 'Ocupacion',
@@ -100,10 +104,10 @@ if df is not None:
     for col in ['Sexo', 'Edad', 'Nivel_Estudios', 'Ocupacion', 'Ingreso_Mensual', 'Identificacion_Indigena']:
         df_eda[col] = df_eda[col].apply(clean_labels)
 
-    # Métricas Dashboard (Cuerpo Principal)
-    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica.")
+    # Títulos Principales
+    st.title("📊 Perfil Socioeconómico: Buenos Aires, Costa Rica.")
     st.subheader("Dashboard Piloto.")
-    st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
+    st.markdown("**Alfredo Ibrahim Flores Sarria ©2026**")
     
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
@@ -120,7 +124,7 @@ if df is not None:
     st.divider()
 
     if btn_analisis:
-        with st.spinner('Procesando reporte completo...'):
+        with st.spinner('Procesando visualizaciones...'):
             sns.set(style="whitegrid")
             figuras, titulos = [], []
             
@@ -131,8 +135,7 @@ if df is not None:
                 st.subheader(t1)
                 fig1, ax1 = plt.subplots()
                 sns.countplot(x='Sexo', data=df_eda, palette='pastel', ax=ax1)
-                ax1.set_title("") # ELIMINAR TÍTULO INTERNO
-                ax1.set_xlabel(None); ax1.set_ylabel(None)
+                ax1.set_title(""); ax1.set_xlabel(None); ax1.set_ylabel(None)
                 st.pyplot(fig1)
                 figuras.append(fig1); titulos.append(t1)
 
@@ -142,8 +145,7 @@ if df is not None:
                 fig2, ax2 = plt.subplots()
                 edad_order = sorted(df_eda['Edad'].unique(), key=lambda x: int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0)
                 sns.countplot(x='Edad', data=df_eda, order=edad_order, ax=ax2)
-                ax2.set_title("") # ELIMINAR TÍTULO INTERNO
-                plt.xticks(rotation=45, ha='right')
+                ax2.set_title(""); plt.xticks(rotation=45, ha='right')
                 ax2.set_xlabel(None); ax2.set_ylabel(None)
                 st.pyplot(fig2)
                 figuras.append(fig2); titulos.append(t2)
@@ -154,9 +156,8 @@ if df is not None:
                 t3 = "Nivel Académico Alcanzado"
                 st.subheader(t3)
                 fig3, ax3 = plt.subplots()
-                sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', ax=ax3)
-                ax3.set_title("") # ELIMINAR TÍTULO INTERNO
-                ax3.set_xlabel(None); ax3.set_ylabel(None)
+                sns.countplot(y='Nivel_Est_order' if 'Nivel_Est_order' in locals() else 'Nivel_Estudios', data=df_eda, palette='magma', ax=ax3)
+                ax3.set_title(""); ax3.set_xlabel(None); ax3.set_ylabel(None)
                 st.pyplot(fig3)
                 figuras.append(fig3); titulos.append(t3)
 
@@ -166,8 +167,7 @@ if df is not None:
                 fig4, ax4 = plt.subplots()
                 ocup_top = df_eda['Ocupacion'].value_counts().head(10).index
                 sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_top)], order=ocup_top, ax=ax4)
-                ax4.set_title("") # ELIMINAR TÍTULO INTERNO
-                ax4.set_xlabel(None); ax4.set_ylabel(None)
+                ax4.set_title(""); ax4.set_xlabel(None); ax4.set_ylabel(None)
                 st.pyplot(fig4)
                 figuras.append(fig4); titulos.append(t4)
 
@@ -180,8 +180,7 @@ if df is not None:
                 ing_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
                 ing_order = sorted([l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map], key=lambda x: ing_map[x])
                 sns.countplot(y='Ingreso_Mensual', data=df_eda, order=ing_order, ax=ax5)
-                ax5.set_title("") # ELIMINAR TÍTULO INTERNO
-                ax5.set_xlabel(None); ax5.set_ylabel(None)
+                ax5.set_title(""); ax5.set_xlabel(None); ax5.set_ylabel(None)
                 st.pyplot(fig5)
                 figuras.append(fig5); titulos.append(t5)
 
@@ -190,15 +189,17 @@ if df is not None:
                 st.subheader(t6)
                 fig6, ax6 = plt.subplots()
                 sns.histplot(x='Identificacion_Indigena', data=df_eda, stat="proportion", ax=ax6)
-                ax6.set_title("") # ELIMINAR TÍTULO INTERNO
-                ax6.set_xlabel(None); ax6.set_ylabel(None)
+                ax6.set_title(""); ax6.set_xlabel(None); ax6.set_ylabel(None)
                 st.pyplot(fig6)
                 figuras.append(fig6); titulos.append(t6)
 
-            st.divider()
+            st.sidebar.success("✅ Análisis terminado")
+            st.sidebar.write("---")
+            st.sidebar.subheader("Ver resultados")
+            
             pdf_bytes = generar_pdf_completo(conteo_sexo, total_n, pct_ind, figuras, titulos)
-            st.download_button(
-                label="📥 Descargar Reporte PDF Completo",
+            st.sidebar.download_button(
+                label="📥 Descargar Reporte PDF",
                 data=pdf_bytes,
                 file_name="reporte_buenos_aires_final.pdf",
                 mime="application/pdf",
