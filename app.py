@@ -30,7 +30,7 @@ def clean_labels(text):
     return re.sub(r'^[a-z]\)\s*', '', str(text)).strip()
 
 def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_graficos):
-    """Genera un PDF profesional sin títulos duplicados y con ejes limpios."""
+    """Genera un PDF profesional con títulos únicos y ejes limpios."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
@@ -65,7 +65,7 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
         pdf.set_font("Arial", 'B', 12)
         pdf.cell(200, 10, txt=f"{titulos_graficos[i]}", ln=True) 
         
-        # ELIMINACIÓN DE TÍTULO INTERNO PARA EL PDF
+        # ELIMINACIÓN DE TÍTULO INTERNO PARA EL PDF (Solo la imagen)
         ax = fig.gca()
         ax.set_title("") 
         
@@ -82,6 +82,14 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
 # --- LÓGICA DE DATOS ---
 df = cargar_datos()
 
+# SIDEBAR (Se define fuera para que sea persistente)
+with st.sidebar:
+    if os.path.exists("sidebar_desarrollo_territorial.png"):
+        st.image("sidebar_desarrollo_territorial.png", use_container_width=True)
+    st.header("⚙️ Panel de Control")
+    st.write("Bienvenido. Use el botón para procesar la información municipal.")
+    btn_analisis = st.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
+
 if df is not None:
     column_mapping = {
         df.columns[3]: 'Sexo', df.columns[4]: 'Edad',
@@ -92,15 +100,9 @@ if df is not None:
     for col in ['Sexo', 'Edad', 'Nivel_Estudios', 'Ocupacion', 'Ingreso_Mensual', 'Identificacion_Indigena']:
         df_eda[col] = df_eda[col].apply(clean_labels)
 
-    # Sidebar con logo
-    if os.path.exists("sidebar_desarrollo_territorial.png"):
-        st.sidebar.image("sidebar_desarrollo_territorial.png", use_container_width=True)
-    st.sidebar.header("⚙️ Panel de Control")
-    btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
-
-    # Métricas Dashboard
+    # Métricas Dashboard (Cuerpo Principal)
     st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica.")
-    st.title("Dashboard Piloto.")
+    st.subheader("Dashboard Piloto.")
     st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
     
     total_n = len(df_eda)
@@ -129,7 +131,8 @@ if df is not None:
                 st.subheader(t1)
                 fig1, ax1 = plt.subplots()
                 sns.countplot(x='Sexo', data=df_eda, palette='pastel', ax=ax1)
-                ax1.set_xlabel(None); ax1.set_ylabel(None) # QUITAR ROTULACIÓN
+                ax1.set_title("") # ELIMINAR TÍTULO INTERNO
+                ax1.set_xlabel(None); ax1.set_ylabel(None)
                 st.pyplot(fig1)
                 figuras.append(fig1); titulos.append(t1)
 
@@ -139,8 +142,9 @@ if df is not None:
                 fig2, ax2 = plt.subplots()
                 edad_order = sorted(df_eda['Edad'].unique(), key=lambda x: int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0)
                 sns.countplot(x='Edad', data=df_eda, order=edad_order, ax=ax2)
+                ax2.set_title("") # ELIMINAR TÍTULO INTERNO
                 plt.xticks(rotation=45, ha='right')
-                ax2.set_xlabel(None); ax2.set_ylabel(None) # QUITAR ROTULACIÓN
+                ax2.set_xlabel(None); ax2.set_ylabel(None)
                 st.pyplot(fig2)
                 figuras.append(fig2); titulos.append(t2)
 
@@ -151,7 +155,8 @@ if df is not None:
                 st.subheader(t3)
                 fig3, ax3 = plt.subplots()
                 sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', ax=ax3)
-                ax3.set_xlabel(None); ax3.set_ylabel(None) # QUITAR ROTULACIÓN
+                ax3.set_title("") # ELIMINAR TÍTULO INTERNO
+                ax3.set_xlabel(None); ax3.set_ylabel(None)
                 st.pyplot(fig3)
                 figuras.append(fig3); titulos.append(t3)
 
@@ -161,7 +166,8 @@ if df is not None:
                 fig4, ax4 = plt.subplots()
                 ocup_top = df_eda['Ocupacion'].value_counts().head(10).index
                 sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_top)], order=ocup_top, ax=ax4)
-                ax4.set_xlabel(None); ax4.set_ylabel(None) # QUITAR ROTULACIÓN
+                ax4.set_title("") # ELIMINAR TÍTULO INTERNO
+                ax4.set_xlabel(None); ax4.set_ylabel(None)
                 st.pyplot(fig4)
                 figuras.append(fig4); titulos.append(t4)
 
@@ -174,7 +180,8 @@ if df is not None:
                 ing_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
                 ing_order = sorted([l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map], key=lambda x: ing_map[x])
                 sns.countplot(y='Ingreso_Mensual', data=df_eda, order=ing_order, ax=ax5)
-                ax5.set_xlabel(None); ax5.set_ylabel(None) # QUITAR ROTULACIÓN
+                ax5.set_title("") # ELIMINAR TÍTULO INTERNO
+                ax5.set_xlabel(None); ax5.set_ylabel(None)
                 st.pyplot(fig5)
                 figuras.append(fig5); titulos.append(t5)
 
@@ -183,7 +190,8 @@ if df is not None:
                 st.subheader(t6)
                 fig6, ax6 = plt.subplots()
                 sns.histplot(x='Identificacion_Indigena', data=df_eda, stat="proportion", ax=ax6)
-                ax6.set_xlabel(None); ax6.set_ylabel(None) # QUITAR ROTULACIÓN
+                ax6.set_title("") # ELIMINAR TÍTULO INTERNO
+                ax6.set_xlabel(None); ax6.set_ylabel(None)
                 st.pyplot(fig6)
                 figuras.append(fig6); titulos.append(t6)
 
@@ -196,6 +204,7 @@ if df is not None:
                 mime="application/pdf",
                 use_container_width=True
             )
-            st.success("✅ Reporte PDF generado con diseño limpio.")
+    else:
+        st.info("💡 Por favor, haga clic en el botón de la barra lateral para generar el análisis visual detallado.")
 else:
-    st.error("Archivo no encontrado.")
+    st.error("No se encontró el archivo de datos.")
