@@ -71,7 +71,7 @@ if df is not None:
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
     # --- TÍTULOS Y MÉTRICAS ---
-    st.title("📊 Perfil Socioeconómico: Buenos Aires, Costa Rica")
+    st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
     st.markdown("### Piloto de Diagnóstico Municipal")
     st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
 
