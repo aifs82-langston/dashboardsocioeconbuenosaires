@@ -72,7 +72,7 @@ if df is not None:
 
     # --- TÍTULOS Y MÉTRICAS ---
     st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica")
-    st.markdown("### Piloto de Diagnóstico Municipal")
+    st.markdown("### Dashboard Piloto")
     st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
 
     # Cálculos para métricas
