@@ -34,14 +34,14 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
     pdf.add_page()
     
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos", ln=True, align='C')
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconómicos", ln=True, align='C')
     pdf.set_font("Arial", 'I', 10)
     pdf.cell(200, 10, txt="Municipalidad de Buenos Aires, Costa Rica - Piloto 2026", ln=True, align='C')
     
     pdf.set_font("Arial", 'B', 12)
     pdf.ln(10)
     pdf.cell(200, 10, txt=f"Total de la Muestra: {total} encuestados", ln=True)
-    pdf.cell(200, 10, txt=f"Identificacion Indigena: {pct_ind:.1f}%", ln=True)
+    pdf.cell(200, 10, txt=f"Identificación Indígena: {pct_ind:.1f}%", ln=True)
     
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 12)
@@ -64,7 +64,7 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
             fig.savefig(tmpfile.name, format='png', bbox_inches='tight', dpi=150)
             pdf.image(tmpfile.name, x=20, w=160)
         os.unlink(tmpfile.name)
-        if (i + 1) % 2 == 0:
+        if (i + 1) % 2 == 0 and (i + 1) < len(lista_graficos):
             pdf.add_page()
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
@@ -81,14 +81,11 @@ if df is not None:
     for col in ['Sexo', 'Edad', 'Nivel_Estudios', 'Ocupacion', 'Ingreso_Mensual', 'Identificacion_Indigena']:
         df_eda[col] = df_eda[col].apply(clean_labels)
 
-    # --- DISEÑO CENTRAL (MOVIDO DEL SIDEBAR PARA MÓVILES) ---
-    # Colocamos el logo y el botón en el centro para evitar el menú oculto
+    # --- DISEÑO CENTRAL (VISIBLE EN MÓVILES) ---
     col_logo, col_btn = st.columns([1, 1])
-    
     with col_logo:
         if os.path.exists("sidebar_desarrollo_territorial.png"):
             st.image("sidebar_desarrollo_territorial.png", use_container_width=True)
-    
     with col_btn:
         st.write("### Panel de Control")
         btn_analisis = st.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
@@ -113,8 +110,10 @@ if df is not None:
     st.divider()
 
     if btn_analisis:
-        st.toast("Inicio de análisis...")
-        with st.spinner('Procesando reporte completo...'):
+        # CONTENEDOR DE MENSAJES DE EJECUCIÓN
+        with st.status("Procesando información municipal...", expanded=True) as status:
+            st.write("🔄 Inicio de análisis...")
+            
             sns.set(style="whitegrid")
             figuras, titulos = [], []
             
@@ -183,16 +182,18 @@ if df is not None:
                 st.pyplot(fig6)
                 figuras.append(fig6); titulos.append(t6)
 
-            st.success("✅ Análisis terminado")
+            st.write("✅ Análisis terminado")
+            status.update(label="Análisis descriptivo concluido", state="complete", expanded=False)
             
-            pdf_bytes = generar_pdf_completo(conteo_sexo, total_n, pct_ind, figuras, titulos)
-            st.download_button(
-                label="📥 Descargar Reporte PDF Completo",
-                data=pdf_bytes,
-                file_name="reporte_buenos_aires_final.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+        # Botón de descarga PDF aparece después del análisis
+        pdf_bytes = generar_pdf_completo(conteo_sexo, total_n, pct_ind, figuras, titulos)
+        st.download_button(
+            label="📥 Ver resultados (Descargar Reporte PDF)",
+            data=pdf_bytes,
+            file_name="reporte_buenos_aires_final.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
     else:
         st.info("💡 Por favor, haga clic arriba en el botón ▶️ para generar el análisis visual y el reporte.")
 else:
