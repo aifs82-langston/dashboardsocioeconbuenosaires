@@ -9,39 +9,36 @@ from fpdf import FPDF
 from tempfile import NamedTemporaryFile
 
 # 1. CONFIGURACIÓN PROFESIONAL
-st.set_page_config(page_title="Dashboard de datos socioeconómicos - Municipalidad de Buenos Aires", layout="wide")
+st.set_page_config(page_title="Dashboard Socioeconómico - Buenos Aires", layout="wide")
 
 # --- FUNCIONES DE APOYO ---
 @st.cache_data
 def cargar_datos():
-    """Intenta cargar 'datosbuenosaires.xlsx' o el primer Excel disponible."""
     try:
         if os.path.exists('datosbuenosaires.xlsx'):
             return pd.read_excel('datosbuenosaires.xlsx')
         else:
             excel_files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
-            if excel_files:
-                return pd.read_excel(excel_files[0])
+            return pd.read_excel(excel_files[0]) if excel_files else None
     except Exception as e:
         st.error(f"Error al leer el archivo: {e}")
     return None
 
 def clean_labels(text):
-    """Limpia prefijos tipo 'a) ', 'b) ' y espacios residuales."""
     if pd.isna(text): return text
     return re.sub(r'^[a-z]\)\s*', '', str(text)).strip()
 
-def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos):
-    """Genera un PDF que incluye el resumen y los gráficos del dashboard."""
+def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_graficos):
+    """Genera un PDF que incluye métricas y gráficos con sus respectivos títulos."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     
-    # Título
+    # Encabezado
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos - Buenos Aires", ln=True, align='C')
     
-    # Métricas
+    # Métricas principales
     pdf.set_font("Arial", size=12)
     pdf.ln(10)
     pdf.cell(200, 10, txt=f"Total de la Muestra: {total}", ln=True)
@@ -54,57 +51,55 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos):
     for label, value in conteo_sexo.items():
         pdf.cell(200, 8, txt=f"- {label}: {value}", ln=True)
     
-    # Agregar Gráficos
     pdf.ln(10)
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(200, 10, txt="Visualizaciones del Dashboard:", ln=True)
+    pdf.cell(200, 10, txt="Visualizaciones Detalladas:", ln=True)
     
-    for fig in lista_graficos:
-        # Guardar gráfico temporalmente
+    # Insertar Gráficos con Títulos
+    for i, fig in enumerate(lista_graficos):
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(200, 10, txt=f"{titulos_graficos[i]}", ln=True) # Escribir título manualmente en el PDF
+        
         with NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-            fig.savefig(tmpfile.name, format='png', bbox_inches='tight')
-            pdf.image(tmpfile.name, x=10, w=180)
-            pdf.ln(5)
-        os.unlink(tmpfile.name) # Borrar archivo temporal
+            # bbox_inches='tight' asegura que el título del gráfico se guarde en la imagen
+            fig.savefig(tmpfile.name, format='png', bbox_inches='tight', dpi=150)
+            pdf.image(tmpfile.name, x=15, w=170)
+        os.unlink(tmpfile.name)
+        
+        # Agregar salto de página cada 2 gráficos
+        if (i + 1) % 2 == 0:
+            pdf.add_page()
 
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
-# --- LÓGICA DE CARGA Y LIMPIEZA ---
+# --- LÓGICA DE DATOS ---
 df = cargar_datos()
 
 if df is not None:
     column_mapping = {
-        df.columns[3]: 'Sexo', 
-        df.columns[4]: 'Edad',
-        df.columns[5]: 'Nivel_Estudios', 
-        df.columns[6]: 'Ocupacion',
-        df.columns[7]: 'Ingreso_Mensual', 
-        df.columns[9]: 'Identificacion_Indigena'
+        df.columns[3]: 'Sexo', df.columns[4]: 'Edad',
+        df.columns[5]: 'Nivel_Estudios', df.columns[6]: 'Ocupacion',
+        df.columns[7]: 'Ingreso_Mensual', df.columns[9]: 'Identificacion_Indigena'
     }
     df_eda = df.rename(columns=column_mapping).copy()
-
     for col in ['Sexo', 'Edad', 'Nivel_Estudios', 'Ocupacion', 'Ingreso_Mensual', 'Identificacion_Indigena']:
         df_eda[col] = df_eda[col].apply(clean_labels)
 
-    # --- BARRA LATERAL (SIDEBAR) ---
-    # Asegúrate de tener esta imagen en tu GitHub
+    # Sidebar
     if os.path.exists("sidebar_desarrollo_territorial.png"):
         st.sidebar.image("sidebar_desarrollo_territorial.png", use_container_width=True)
-    
     st.sidebar.header("⚙️ Panel de Control")
-    st.sidebar.write("Use el botón para procesar la información municipal.")
     btn_analisis = st.sidebar.button("▶️ Ejecutar Análisis Descriptivo", use_container_width=True)
 
-    # --- TÍTULOS Y MÉTRICAS ---
+    # Métricas Dashboard
     st.title("📊 Perfil Socioeconómico: Buenos Aires, Costa Rica")
-    st.markdown("### Piloto de Diagnóstico Municipal")
-
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
     conteo_sexo = df_eda['Sexo'].value_counts()
     detalle_sexo = " | ".join([f"{k}: {v}" for k, v in conteo_sexo.items()])
 
-    col_m1, col_m2, col_m3 = st.columns([1.2, 1, 1])
+    col_m1, col_m2 = st.columns([2, 1])
     with col_m1:
         st.metric("Total Muestra", total_n)
         st.caption(f"**Desglose:** {detalle_sexo}")
@@ -113,86 +108,85 @@ if df is not None:
     
     st.divider()
 
-    # --- EJECUCIÓN DEL ANÁLISIS ---
     if btn_analisis:
-        with st.spinner('Generando visualizaciones...'):
+        with st.spinner('Procesando reporte completo...'):
             sns.set(style="whitegrid")
-            lista_de_figuras = [] # Aquí guardaremos los gráficos para el PDF
+            figuras = []
+            titulos = []
             
             # FILA 1
             c1, c2 = st.columns(2)
             with c1:
-                st.subheader("Distribución por Género")
+                t1 = "Distribución por Género"
+                st.subheader(t1)
                 fig1, ax1 = plt.subplots()
-                sns.countplot(x='Sexo', data=df_eda, palette='pastel', hue='Sexo', legend=False, ax=ax1)
-                ax1.set_xlabel(""); ax1.set_ylabel("Frecuencia (n)")
+                sns.countplot(x='Sexo', data=df_eda, palette='pastel', ax=ax1)
+                ax1.set_title(t1); ax1.set_ylabel("Frecuencia (n)")
                 st.pyplot(fig1)
-                lista_de_figuras.append(fig1)
+                figuras.append(fig1); titulos.append(t1)
 
             with c2:
-                st.subheader("Rangos de Edad")
+                t2 = "Rangos de Edad"
+                st.subheader(t2)
                 fig2, ax2 = plt.subplots()
                 edad_order = sorted(df_eda['Edad'].unique(), key=lambda x: int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0)
-                sns.countplot(x='Edad', data=df_eda, palette='viridis', order=edad_order, hue='Edad', legend=False, ax=ax2)
+                sns.countplot(x='Edad', data=df_eda, order=edad_order, ax=ax2)
                 plt.xticks(rotation=45, ha='right')
-                ax2.set_xlabel(""); ax2.set_ylabel("Frecuencia (n)")
+                ax2.set_title(t2); ax2.set_ylabel("Frecuencia (n)")
                 st.pyplot(fig2)
-                lista_de_figuras.append(fig2)
+                figuras.append(fig2); titulos.append(t2)
 
-            # FILA 2
+            # FILA 2: Educación y Ocupación
             c3, c4 = st.columns(2)
             with c3:
-                st.subheader("Nivel Académico Alcanzado")
+                t3 = "Nivel Académico Alcanzado"
+                st.subheader(t3)
                 fig3, ax3 = plt.subplots()
-                est_order = df_eda['Nivel_Estudios'].value_counts().index
-                sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', order=est_order, hue='Nivel_Estudios', legend=False, ax=ax3)
-                ax3.set_xlabel("Frecuencia (n)"); ax3.set_ylabel("")
+                sns.countplot(y='Nivel_Estudios', data=df_eda, palette='magma', ax=ax3)
+                ax3.set_title(t3); ax3.set_xlabel("Frecuencia (n)")
                 st.pyplot(fig3)
-                lista_de_figuras.append(fig3)
+                figuras.append(fig3); titulos.append(t3)
 
             with c4:
-                st.subheader("Ocupación Principal (Top 10)")
+                t4 = "Ocupación Principal (Top 10)"
+                st.subheader(t4)
                 fig4, ax4 = plt.subplots()
-                ocup_order = df_eda['Ocupacion'].value_counts().head(10).index
-                sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_order)], palette='rocket', order=ocup_order, hue='Ocupacion', legend=False, ax=ax4)
-                ax4.set_xlabel("Frecuencia (n)"); ax4.set_ylabel("")
+                ocup_top = df_eda['Ocupacion'].value_counts().head(10).index
+                sns.countplot(y='Ocupacion', data=df_eda[df_eda['Ocupacion'].isin(ocup_top)], order=ocup_top, ax=ax4)
+                ax4.set_title(t4); ax4.set_xlabel("Frecuencia (n)")
                 st.pyplot(fig4)
-                lista_de_figuras.append(fig4)
+                figuras.append(fig4); titulos.append(t4)
 
-            # FILA 3
+            # FILA 3: Ingresos e Identidad
             c5, c6 = st.columns(2)
             with c5:
-                st.subheader("Nivel de Ingresos Mensuales")
+                t5 = "Nivel de Ingresos Mensuales"
+                st.subheader(t5)
                 fig5, ax5 = plt.subplots()
                 ing_map = {'Menos de ₡200,000': 1, 'Entre ₡250,000 y ₡350,000': 2, 'Entre ₡360,000 y ₡450,000': 3, 'Entre ₡450,000 y ₡600,000': 4, 'Más de ₡600,000': 5}
-                label_list = [l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map]
-                ing_order = sorted(label_list, key=lambda x: ing_map[x])
-                sns.countplot(y='Ingreso_Mensual', data=df_eda, palette='crest', order=ing_order, hue='Ingreso_Mensual', legend=False, ax=ax5)
-                ax5.set_xlabel("Frecuencia (n)"); ax5.set_ylabel("")
+                ing_order = sorted([l for l in df_eda['Ingreso_Mensual'].unique() if l in ing_map], key=lambda x: ing_map[x])
+                sns.countplot(y='Ingreso_Mensual', data=df_eda, order=ing_order, ax=ax5)
+                ax5.set_title(t5); ax5.set_xlabel("Frecuencia (n)")
                 st.pyplot(fig5)
-                lista_de_figuras.append(fig5)
+                figuras.append(fig5); titulos.append(t5)
 
             with c6:
-                st.subheader("Identificación Indígena (Proporción)")
+                t6 = "Identificación Indígena (Proporción)"
+                st.subheader(t6)
                 fig6, ax6 = plt.subplots()
-                sns.histplot(x='Identificacion_Indigena', data=df_eda, hue='Identificacion_Indigena', palette='Set2', stat="proportion", shrink=.8, legend=False, ax=ax6)
-                ax6.set_xlabel(""); ax6.set_ylabel("Frecuencia Relativa")
+                sns.histplot(x='Identificacion_Indigena', data=df_eda, stat="proportion", ax=ax6)
+                ax6.set_title(t6); ax6.set_ylabel("Frecuencia Relativa")
                 st.pyplot(fig6)
-                lista_de_figuras.append(fig6)
+                figuras.append(fig6); titulos.append(t6)
 
-            # BOTÓN DE DESCARGA (Se genera dentro del análisis para tener acceso a lista_de_figuras)
             st.divider()
-            pdf_bytes = generar_pdf_completo(conteo_sexo, total_n, pct_ind, lista_de_figuras)
+            pdf_bytes = generar_pdf_completo(conteo_sexo, total_n, pct_ind, figuras, titulos)
             st.download_button(
-                label="📥 Descargar Reporte PDF Completo (con Gráficos)",
+                label="📥 Descargar Reporte PDF Completo",
                 data=pdf_bytes,
-                file_name="reporte_buenos_aires_completo.pdf",
+                file_name="reporte_buenos_aires_final.pdf",
                 mime="application/pdf",
                 use_container_width=True
             )
-            st.success("✅ Análisis descriptivo finalizado. El reporte PDF con gráficos ya está disponible para descarga.")
-    else:
-        st.info("💡 Haga clic en el botón 'Ejecutar Análisis' para generar las visualizaciones y el reporte PDF.")
-
 else:
-    st.error("No se encontró el archivo de datos en el repositorio de GitHub.")
+    st.error("Archivo no encontrado.")
