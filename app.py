@@ -36,7 +36,7 @@ def generar_pdf_completo(conteo_sexo, total, pct_ind, lista_graficos, titulos_gr
     
     # Encabezado
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos - Buenos Aires", ln=True, align='C')
+    pdf.cell(200, 10, txt="Reporte Ejecutivo: Datos Socioeconomicos - Municipalidad de Buenos Aires, Costa Rica", ln=True, align='C')
     
     # Métricas principales
     pdf.set_font("Arial", size=12)
@@ -94,7 +94,8 @@ if df is not None:
 
     # Métricas Dashboard
     st.title("📊 Perfil Socioeconómico: Municipalidad de Buenos Aires, Costa Rica.")
-    st.markdown("### Dashboard Piloto")
+    st.markdown("Dashboard Piloto")
+    st.markdown("Alfredo Ibrahim Flores Sarria ©2026")
     total_n = len(df_eda)
     pct_ind = (df_eda['Identificacion_Indigena'].str.lower() == 'sí').mean() * 100
     conteo_sexo = df_eda['Sexo'].value_counts()
